@@ -1,14 +1,14 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import pprint
+
 
 import requests
 from bs4 import BeautifulSoup as soup
 import time as t
 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds=ServiceAccountCredentials.from_json_keyfile_name('secret.json',scope)
-client=gspread.authorize(creds)
+creds = ServiceAccountCredentials.from_json_keyfile_name('/home/mecampen/steamscrape/steamscrape/src/secret.json',scope)
+client = gspread.authorize(creds)
 
 sheet1=client.open('steam_cases').sheet1
 
@@ -46,7 +46,7 @@ def check_for_new_item():
     page_soup = soup(data.content,'html.parser')
     new_titles = []
     market_listings = page_soup.findAll('a',{'class':'market_listing_row_link'})
-    
+
     for market_listing in market_listings:
         i = 0
         title = market_listing.find('span','market_listing_item_name').text
@@ -57,7 +57,7 @@ def check_for_new_item():
 def recent_time():
     localtime = t.localtime(t.time())
     return str(localtime.tm_mday)+'.'+str(localtime.tm_mon)+'.'+str(localtime.tm_year)
-            
+
 #scraper
 def update(days):#check_for_new_item()
     j = days + 1
@@ -72,26 +72,25 @@ def update(days):#check_for_new_item()
         new_url = start_url+search+'#p1_name_asc'
         data = requests.get(new_url)
         page_soup = soup(data.content,'html.parser')
-        
+
         market_listings = page_soup.findAll('a',{'class':'market_listing_row_link'})
-        
+
         for market_listing in market_listings:
             price = market_listing.find('span', 'normal_price').span.text
             price = price[1:6]
-            if price[4]==' ':
+            if price[3]==' ':
                 price = price[0:4]
             name = market_listing.find('span','market_listing_item_name').text
             price_dict[name] = price
 
-    print("case_row ", case_row)
-    print("price_dict ", price_dict.keys())
+    #print("case_row ", case_row)
+    #print("price_dict ", price_dict.keys())
 
     for case_name in case_row:
         updated_values.append(price_dict[case_name])
 
     sheet1.insert_row(updated_values, j)
-    print("inserted values successfully")
-
+    print("inserted values successfully!")
 
 def main():
     dates=sheet1.col_values(1)
@@ -99,7 +98,7 @@ def main():
     print('days:{}'.format(days))
     if len(dates) == 0:
         update(1)
-    elif dates[days-1][0:2] != recent_time()[0:2]:
+    elif dates[days-1][0:2]!=recent_time()[0:2]:
         print('last entry: {}'.format(dates[days-1]))
         print('today:{}'.format(recent_time()))
         print('updating sheet...')
@@ -112,6 +111,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
