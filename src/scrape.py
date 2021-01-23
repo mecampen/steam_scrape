@@ -86,11 +86,19 @@ def update(days):#check_for_new_item()
     #print("case_row ", case_row)
     #print("price_dict ", price_dict.keys())
 
-    for case_name in case_row:
-        updated_values.append(price_dict[case_name])
+    try:
+        for case_name in case_row:
+            updated_values.append(price_dict[case_name])
+    except:
+        print('error occurred at {} retrying...'.format(case_name))
+        updated_values = {}
+        t.sleep(600)
+        update(days)
 
     sheet1.insert_row(updated_values, j)
     print("inserted values successfully!")
+
+
 
 def main():
     dates=sheet1.col_values(1)
@@ -111,5 +119,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
