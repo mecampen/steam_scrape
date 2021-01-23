@@ -7,7 +7,39 @@ from bs4 import BeautifulSoup as soup
 import time as t
 
 import json
-from .sql import drop_cases, drop_prices, create_cases, create_prices
+from sql import (
+    drop_cases,
+    drop_prices,
+    create_cases,
+    create_prices,
+    insert_case,
+    insert_price,
+    select_all_cases,
+    select_all_prices
+    )
+
+import mysql.connector
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pprint
+
+import requests
+from bs4 import BeautifulSoup as soup
+import time as t
+
+import json
+from sql import (
+    drop_cases,
+    drop_prices,
+    create_cases,
+    create_prices,
+    insert_case,
+    insert_price,
+    select_all_cases,
+    select_all_prices
+    )
+
 import mysql.connector
 
 
@@ -56,9 +88,9 @@ def initiate_sheet(item_list, used_doc):
         #print(new_url)
         data = requests.get(new_url)
         page_soup = soup(data.content,'html.parser')
-    
+
         market_listings = page_soup.findAll('a',{'class':'market_listing_row_link'})
-    
+
         for market_listing in market_listings:
             title = market_listing.find('span','market_listing_item_name').text
             if title == None:
@@ -79,7 +111,7 @@ def initiate_db(item_list):
     username = json_data["username"]
     password = json_data["password"]
 
-    db = mydb.connector.connect(
+    db = mysql.connector.connect(
         host=host,
         user=username,
         password=password,
@@ -89,15 +121,49 @@ def initiate_db(item_list):
     cursor = db.cursor()
 
     print("setting up database...")
-    cursor.execute()
+
+    cursor.execute(drop_prices)
+    cursor.execute(drop_cases)
+    cursor.execute(create_cases)
+    cursor.execute(create_prices)
+    print("tables created!")
+
+    for search in item_list:
+        new_url=start_url+search+'#p1_name_asc'
+        #print(new_url)
+        data = requests.get(new_url)
+        page_soup = soup(data.content, 'html.parser')
+        market_listings = page_soup.findAll('a', {'class':'market_listing_row_link'})
+        for market_listing in market_listings:
+            title = market_listing.find('span', 'market_listing_item_name').text
+            if title == None:
+                print('too many server requests!')
+                break
+            print(title)
+            cursor.execute(
+                insert_case, (title,)
+                )
+    print('setup successfull!')
+
+    #test time insert
+    #price = 0.2
+    #case_id = 1
+    #cursor.execute(insert_price, (case_id, price,))
+    #cursor.execute(select_all_prices)
+    #records = cursor.fetchall()
+    #for record in records:
+    #    print(record)
+
+    #cursor.execute(
+    #    select_all_cases
+    #    )
+    #print("ALL CASES:")
+    #records = cursor.fetchall()
+    #for record in records:
+    #    print(record)
 
 
-initiate_db(item_list,sheet1)
+initiate_db(item_list)
 
+#initiate(item_list)
 #initiate(item_list_old,sheet2)
-
-
-
-
-
-            

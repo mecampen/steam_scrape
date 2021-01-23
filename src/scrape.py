@@ -6,6 +6,8 @@ import requests
 from bs4 import BeautifulSoup as soup
 import time as t
 
+from sql import insert_price
+
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name('/home/mecampen/steamscrape/steamscrape/src/secret.json',scope)
 client = gspread.authorize(creds)
@@ -13,6 +15,24 @@ client = gspread.authorize(creds)
 sheet1=client.open('steam_cases').sheet1
 
 start_url='https://steamcommunity.com/market/search?category_730_ItemSet%5B%5D=any&category_730_ProPlayer%5B%5D=any&category_730_StickerCapsule%5B%5D=any&category_730_TournamentTeam%5B%5D=any&category_730_Weapon%5B%5D=any&category_730_Type%5B%5D=tag_CSGO_Type_WeaponCase&appid=730&q=case+'
+
+#credentials for database
+with open("secret.json") as f:
+    json_data = json.load(f)
+database = json_data["database"]
+host = json_data["host"]
+username = json_data["username"]
+password = json_data["password"]
+
+db = mysql.connector.connect(
+    host=host,
+    user=username,
+    password=password,
+    database=database
+)
+
+cursor = db.cursor()
+
 
 item_list=[
     'Chroma',
@@ -82,6 +102,11 @@ def update(days):#check_for_new_item()
                 price = price[0:4]
             name = market_listing.find('span','market_listing_item_name').text
             price_dict[name] = price
+
+            #update database entry
+            cursor.execute(select_case_id, (name,))
+            case_id = cursor.fetchone()[0]
+            cursor.execute(insert_price, (case_id, float(price),))
 
     #print("case_row ", case_row)
     #print("price_dict ", price_dict.keys())
